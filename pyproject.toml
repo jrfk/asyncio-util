@@ -1,0 +1,61 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "asyncio-util"
+dynamic = ["version"]
+description = ''
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Junya Fukuda", email = "junya.fukuda.e@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = []
+
+[project.urls]
+Documentation = "https://github.com/jrfk/asyncio-util#readme"
+Issues = "https://github.com/jrfk/asyncio-util/issues"
+Source = "https://github.com/jrfk/asyncio-util"
+
+[tool.hatch.version]
+path = "src/asyncio_util/__about__.py"
+
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/asyncio_util tests}"
+
+[tool.coverage.run]
+source_pkgs = ["asyncio_util", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/asyncio_util/__about__.py",
+]
+
+[tool.coverage.paths]
+asyncio_util = ["src/asyncio_util", "*/asyncio-util/src/asyncio_util"]
+tests = ["tests", "*/asyncio-util/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
