@@ -3,7 +3,7 @@
 > 
 
 > [!TIP]
-> For PyCon US 2024
+> This repository is a sample project for the PyCon US 2024 [talk](https://us.pycon.org/2024/schedule/presentation/142/).  
 > This project was created with [Hatch](https://github.com/pypa/hatch) 🥚.
 
 > [!WARNING]
