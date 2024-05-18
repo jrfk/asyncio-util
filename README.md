@@ -27,6 +27,9 @@
 
 ## Installation
 
+> [!WARNING]
+> This project is not yet available on PyPI.
+
 ```console
 pip install asyncio-util
 ```
