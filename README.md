@@ -1,3 +1,18 @@
+> [!NOTE]
+> While [trio-util](https://github.com/groove-x/trio-util) supports anyio
+> 
+
+> [!TIP]
+> For PyCon US 2024
+> This project was created with [Hatch](https://github.com/pypa/hatch) 🥚.
+
+> [!WARNING]
+> Some tests are failing.  
+> If you want to use it officially, let's add anyio support to trio-util.
+
+
+
+
 # Asyncio Util
 
 [![PyPI - Version](https://img.shields.io/pypi/v/asyncio-util.svg)](https://pypi.org/project/asyncio-util)
