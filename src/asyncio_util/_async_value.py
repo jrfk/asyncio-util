@@ -21,24 +21,21 @@ P2 = Callable[[T, T], bool]
 
 class _WaitQueue:
     def __init__(self):
-        self.tasks = set()
+        self._futures: set[asyncio.Future[None]] = set()
 
     async def park(self):
-        task = asyncio.current_task()
-        self.tasks.add(task)
+        future = asyncio.get_running_loop().create_future()
+        self._futures.add(future)
         try:
-            await asyncio.get_running_loop().create_future()
-        except asyncio.CancelledError:
-            pass
+            await future
         finally:
-            if task in self.tasks:
-                self.tasks.remove(task)
+            self._futures.discard(future)
 
     def unpark_all(self):
-        for task in self.tasks:
-            if not task.done():
-                task.cancel()
-        self.tasks.clear()
+        futures, self._futures = self._futures, set()
+        for future in futures:
+            if not future.done():
+                future.set_result(None)
 
 
 def _any_transition(value, old_value):  # noqa: ARG001
@@ -71,6 +68,8 @@ class _ValueWrapper:
             return super().__hash__()
 
     def __eq__(self, other):
+        if not isinstance(other, _ValueWrapper):
+            return NotImplemented
         return self.value == other.value
 
     def __call__(self, x, *args):  # noqa: ARG002
@@ -110,7 +109,7 @@ class AsyncValue(Generic[T]):
     async def _wait_predicate(self, result_map, predicate):
         with result_map.open_ref(predicate) as result:
             await result.event.park()
-        return result.value
+            return result.value
 
     @overload
     async def wait_value(self, value: T, *, held_for=0.0, timeout=None) -> T: ...
@@ -177,10 +176,13 @@ class AsyncValue(Generic[T]):
     async def wait_transition(
         self, value_or_predicate=_any_transition, *, timeout=None
     ):
-        return await asyncio.wait_for(
-            self._wait_predicate(self._edge_results, _ValueWrapper(value_or_predicate)),
-            timeout,
-        )
+        try:
+            return await asyncio.wait_for(
+                self._wait_predicate(self._edge_results, _ValueWrapper(value_or_predicate)),
+                timeout,
+            )
+        except asyncio.TimeoutError:
+            raise asyncio.TimeoutError("Operation timed out") from None
 
     @overload
     async def transitions(self, value: T) -> AsyncIterator[tuple[T, T]]:
