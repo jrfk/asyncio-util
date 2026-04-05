@@ -31,6 +31,12 @@ Documentation = "https://github.com/jrfk/asyncio-util#readme"
 Issues = "https://github.com/jrfk/asyncio-util/issues"
 Source = "https://github.com/jrfk/asyncio-util"
 
+[dependency-groups]
+dev = [
+  "pytest>=7.0",
+  "pytest-asyncio>=0.21",
+]
+
 [tool.hatch.version]
 path = "src/asyncio_util/__about__.py"
 
