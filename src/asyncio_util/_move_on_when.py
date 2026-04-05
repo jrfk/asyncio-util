@@ -60,12 +60,23 @@ class _MoveOnWhen:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> bool:
         trigger_task = self._trigger_task
-        if trigger_task is not None and not trigger_task.done():
-            trigger_task.cancel()
-            try:
-                await trigger_task
-            except BaseException:
-                pass
+        if trigger_task is not None:
+            if not trigger_task.done():
+                trigger_task.cancel()
+                try:
+                    await trigger_task
+                except asyncio.CancelledError:
+                    pass
+                except Exception:
+                    pass
+            else:
+                # Retrieve result to avoid "Task exception was never retrieved"
+                try:
+                    trigger_task.result()
+                except asyncio.CancelledError:
+                    pass
+                except Exception:
+                    pass
 
         if exc_type is asyncio.CancelledError and self.scope._should_cancel:
             self.scope.cancelled_caught = True
@@ -124,11 +135,20 @@ async def run_and_cancelling(
     try:
         yield
     finally:
-        task.cancel()
-        try:
-            await task
-        except BaseException:
-            pass
+        if task.done():
+            # Propagate non-cancellation exceptions from the background task
+            try:
+                task.result()
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                raise
+        else:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
 
 @asynccontextmanager
@@ -178,8 +198,16 @@ async def start_and_cancelling(
 
         yield
     finally:
-        task.cancel()
-        try:
-            await task
-        except BaseException:
-            pass
+        if task.done():
+            try:
+                task.result()
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                raise
+        else:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass

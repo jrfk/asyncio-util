@@ -13,7 +13,7 @@ def compose_values(
     *,
     _transform_: Callable[..., T_OUT] | None = None,
     **value_map: AsyncValue[Any],
-) -> _ComposeContext[T_OUT]:
+) -> _ComposeContext:
     """Compose multiple AsyncValues into a single derived AsyncValue.
 
     Changes to any input AsyncValue automatically update the output.

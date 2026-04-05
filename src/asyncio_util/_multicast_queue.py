@@ -10,6 +10,11 @@ T = TypeVar("T")
 class MulticastQueue(Generic[T]):
     """A broadcast queue that delivers each item to every active listener.
 
+    Note:
+        This is a **lossy** queue: if a listener's internal buffer is full,
+        new messages for that listener are silently dropped.  Increase
+        *queue_size* if you need larger buffers, or consume items faster.
+
     Usage::
 
         mq = MulticastQueue()
@@ -43,11 +48,17 @@ class MulticastQueue(Generic[T]):
             yield _Listener(q)
         finally:
             self._listeners.remove(q)
-            # Signal end of iteration
-            try:
-                q.put_nowait(None)
-            except asyncio.QueueFull:
-                pass
+            # Signal end of iteration; ensure the sentinel is delivered
+            # even if the queue is full by dropping an item to make room.
+            while True:
+                try:
+                    q.put_nowait(None)
+                    break
+                except asyncio.QueueFull:
+                    try:
+                        q.get_nowait()
+                    except asyncio.QueueEmpty:
+                        break
 
 
 class _Listener(Generic[T]):
