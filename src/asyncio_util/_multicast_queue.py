@@ -83,5 +83,10 @@ class _Listener(Generic[T]):
         return value
 
     async def get(self) -> T:
-        """Get the next broadcast value."""
+        """Get the next broadcast value.
+
+        Raises:
+            StopAsyncIteration: If the listener has been closed (its
+                ``listen()`` context has exited).
+        """
         return await self.__anext__()
