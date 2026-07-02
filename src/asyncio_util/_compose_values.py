@@ -68,21 +68,20 @@ class _ComposeContext:
 
         for name, src in self._value_map.items():
 
-            def _make_updater(field: str) -> Callable[[Any], bool]:
-                def _update(new_val: Any) -> bool:
+            def _make_updater(field: str) -> Callable[[Any, Any], None]:
+                def _update(new_val: Any, _old_val: Any) -> None:
                     nonlocal composite
                     composite = composite._replace(**{field: new_val})
                     if transform is not None:
                         output.value = transform(composite)
                     else:
                         output.value = composite
-                    return False  # Never "matches" - just a side effect
                 return _update
 
-            updater = _make_updater(name)
-            self._stack.enter_context(
-                src._level_results.open_ref(updater)
-            )
+            # Registered as a listener: a raising transform propagates
+            # to the code assigning the source value (after all other
+            # waiters have been notified) instead of being silently lost.
+            self._stack.enter_context(src._subscribe(_make_updater(name)))
 
         self._output = output
         return output

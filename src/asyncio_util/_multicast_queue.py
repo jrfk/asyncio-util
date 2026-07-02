@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Generic, TypeVar
+from typing import Any, AsyncIterator, Generic, TypeVar
 
 T = TypeVar("T")
+
+_CLOSED = object()  # end-of-stream sentinel (distinct from any user value)
 
 
 class MulticastQueue(Generic[T]):
@@ -29,7 +31,7 @@ class MulticastQueue(Generic[T]):
 
     def __init__(self, queue_size: int = 10) -> None:
         self._queue_size = queue_size
-        self._listeners: list[asyncio.Queue[T | None]] = []
+        self._listeners: list[asyncio.Queue[Any]] = []
 
     async def broadcast(self, value: T) -> None:
         """Send *value* to all active listeners."""
@@ -42,7 +44,7 @@ class MulticastQueue(Generic[T]):
     @asynccontextmanager
     async def listen(self) -> AsyncIterator[_Listener[T]]:
         """Register a listener and yield an async iterable of broadcast values."""
-        q: asyncio.Queue[T | None] = asyncio.Queue(maxsize=self._queue_size)
+        q: asyncio.Queue[Any] = asyncio.Queue(maxsize=self._queue_size)
         self._listeners.append(q)
         try:
             yield _Listener(q)
@@ -52,7 +54,7 @@ class MulticastQueue(Generic[T]):
             # even if the queue is full by dropping an item to make room.
             while True:
                 try:
-                    q.put_nowait(None)
+                    q.put_nowait(_CLOSED)
                     break
                 except asyncio.QueueFull:
                     try:
@@ -64,7 +66,7 @@ class MulticastQueue(Generic[T]):
 class _Listener(Generic[T]):
     """Async iterable wrapper around a listener queue."""
 
-    def __init__(self, queue: asyncio.Queue[T | None]) -> None:
+    def __init__(self, queue: asyncio.Queue[Any]) -> None:
         self._queue = queue
         self._closed = False
 
@@ -75,7 +77,7 @@ class _Listener(Generic[T]):
         if self._closed:
             raise StopAsyncIteration
         value = await self._queue.get()
-        if value is None:
+        if value is _CLOSED:
             self._closed = True
             raise StopAsyncIteration
         return value

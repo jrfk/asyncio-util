@@ -71,6 +71,9 @@ async def test_body_exception_cleans_up_trigger():
 
     with pytest.raises(ValueError, match="body error"):
         async with move_on_when(trigger) as scope:
+            # Reach an await point so the trigger task starts running
+            # before the body raises.
+            await asyncio.sleep(0)
             raise ValueError("body error")
 
     await asyncio.sleep(0.01)

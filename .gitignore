@@ -1,9 +1,29 @@
+# Byte-compiled / caches
 __pycache__/
 *.py[cod]
-*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Build artifacts
 dist/
 build/
+*.egg-info/
+
+# Environments
 .venv/
-.pytest_cache/
-.coverage
-htmlcov/
+venv/
+
+# Docs build
+site/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

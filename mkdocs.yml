@@ -1,0 +1,98 @@
+site_name: asyncio-util
+site_description: "Utilities for asyncio, ported from trio-util: awaitable values, cancel scopes, repeated events, and more"
+site_url: https://jrfk.github.io/asyncio-util/
+repo_url: https://github.com/jrfk/asyncio-util
+repo_name: jrfk/asyncio-util
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Guide:
+      - Waiting for values: guide/waiting.md
+      - Iterating over changes: guide/iterating.md
+      - Deriving and composing: guide/deriving.md
+      - Tasks and cancellation: guide/tasks.md
+      - Events, streams and timing: guide/streams.md
+  - API Reference: api.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - autorefs:
+      resolve_closest: true
+  - i18n:
+      docs_structure: suffix
+      languages:
+        - locale: en
+          name: English
+          build: true
+          default: true
+        - locale: ja
+          name: 日本語
+          build: true
+          site_description: "trio-util から asyncio へ移植したユーティリティ集 — await できる値、キャンセルスコープ、繰り返しイベント"
+          nav_translations:
+            Home: ホーム
+            Getting Started: はじめに
+            Guide: ガイド
+            Waiting for values: 値を待つ
+            Iterating over changes: 変化をイテレートする
+            Deriving and composing: 派生と合成
+            Tasks and cancellation: タスクとキャンセル
+            Events, streams and timing: イベント・ストリーム・タイミング
+            API Reference: API リファレンス
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            separate_signature: true
+            show_signature_annotations: true
+            members_order: source
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/jrfk/asyncio-util
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/asyncio-util/

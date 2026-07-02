@@ -18,8 +18,10 @@ async def wait_any(*args: Callable[[], Awaitable[Any]]) -> None:
     if not args:
         return
 
-    tasks = [asyncio.create_task(f()) for f in args]
+    tasks: list[asyncio.Task[Any]] = []
     try:
+        for f in args:
+            tasks.append(asyncio.create_task(f()))
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         await cancel_tasks(pending)
         errors = []
@@ -47,8 +49,10 @@ async def wait_all(*args: Callable[[], Awaitable[Any]]) -> None:
     if not args:
         return
 
-    tasks = [asyncio.create_task(f()) for f in args]
+    tasks: list[asyncio.Task[Any]] = []
     try:
+        for f in args:
+            tasks.append(asyncio.create_task(f()))
         await asyncio.gather(*tasks)
     except BaseException:
         await cancel_tasks(tasks)
@@ -91,17 +95,17 @@ async def wait_any_map(
     all_tasks: list[asyncio.Task[Any]] = []
     task_to_name: dict[asyncio.Task[Any], str | None] = {}
 
-    for f in fns:
-        task = asyncio.create_task(f())
-        all_tasks.append(task)
-        task_to_name[task] = None
-
-    for name, f in fn_map.items():
-        task = asyncio.create_task(f())
-        all_tasks.append(task)
-        task_to_name[task] = name
-
     try:
+        for f in fns:
+            task = asyncio.create_task(f())
+            all_tasks.append(task)
+            task_to_name[task] = None
+
+        for name, f in fn_map.items():
+            task = asyncio.create_task(f())
+            all_tasks.append(task)
+            task_to_name[task] = name
+
         done, pending = await asyncio.wait(
             all_tasks, return_when=asyncio.FIRST_COMPLETED
         )
