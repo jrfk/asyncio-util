@@ -5,29 +5,41 @@ build-backend = "hatchling.build"
 [project]
 name = "asyncio-util"
 dynamic = ["version"]
-description = ''
+description = "Utilities for asyncio, ported from trio-util: awaitable values, cancel scopes, repeated events, and more"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = "MIT"
-keywords = []
+keywords = [
+  "asyncio",
+  "async",
+  "await",
+  "event",
+  "state",
+  "synchronization",
+  "concurrency",
+  "trio-util",
+]
 authors = [
   { name = "Junya Fukuda", email = "junya.fukuda.e@gmail.com" },
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
+  "Framework :: AsyncIO",
+  "Intended Audience :: Developers",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
+  "Typing :: Typed",
 ]
 dependencies = []
 
 [project.urls]
-Documentation = "https://github.com/jrfk/asyncio-util#readme"
+Documentation = "https://jrfk.github.io/asyncio-util/"
 Issues = "https://github.com/jrfk/asyncio-util/issues"
 Source = "https://github.com/jrfk/asyncio-util"
 
@@ -35,6 +47,13 @@ Source = "https://github.com/jrfk/asyncio-util"
 dev = [
   "pytest>=7.0",
   "pytest-asyncio>=0.21",
+  "coverage[toml]>=7.0",
+]
+docs = [
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.5",
+  "mkdocs-static-i18n>=1.2",
+  "mkdocstrings[python]>=0.27",
 ]
 
 [tool.hatch.version]
@@ -46,6 +65,21 @@ extra-dependencies = [
 ]
 [tool.hatch.envs.types.scripts]
 check = "mypy --install-types --non-interactive {args:src/asyncio_util tests}"
+
+[tool.hatch.envs.docs]
+dependencies = [
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.5",
+  "mkdocs-static-i18n>=1.2",
+  "mkdocstrings[python]>=0.27",
+]
+[tool.hatch.envs.docs.scripts]
+build = "mkdocs build --strict {args}"
+serve = "mkdocs serve {args}"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
 
 [tool.coverage.run]
 source_pkgs = ["asyncio_util", "tests"]
@@ -73,4 +107,4 @@ extra-dependencies = [
 ]
 
 [[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+python = ["3.10", "3.11", "3.12", "3.13", "3.14"]

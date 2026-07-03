@@ -21,6 +21,12 @@ class CancelScope:
 class _MoveOnWhen:
     """Async context manager that cancels the body when a trigger completes.
 
+    The trigger task starts running once the body reaches its first
+    ``await``.  If the trigger raises, the body is cancelled and the
+    trigger's exception is re-raised from the ``async with`` block
+    (unless the body raised its own, non-cancellation exception, which
+    takes precedence).
+
     Note:
         If the trigger fires at the same moment that the task is
         cancelled externally, the external cancellation may be
@@ -40,8 +46,15 @@ class _MoveOnWhen:
         self._kwargs = kwargs
         self.scope = CancelScope()
         self._trigger_task: asyncio.Task[None] | None = None
+        self._trigger_error: Exception | None = None
 
     async def __aenter__(self) -> CancelScope:
+        # The trigger task is created but deliberately not started here:
+        # if it could run (and complete) before the body is entered, its
+        # cancel() would land on this __aenter__ and the CancelledError
+        # would leak to the caller without the body ever running.  By
+        # returning without awaiting, the trigger first runs once the
+        # body reaches an await point.
         current_task = asyncio.current_task()
         scope = self.scope
 
@@ -50,12 +63,13 @@ class _MoveOnWhen:
                 await self._fn(*self._args, **self._kwargs)
             except asyncio.CancelledError:
                 return
+            except Exception as exc:
+                self._trigger_error = exc
             scope._should_cancel = True
             if current_task is not None and not current_task.done():
                 current_task.cancel()
 
         self._trigger_task = asyncio.create_task(_run_trigger())
-        await asyncio.sleep(0)  # Let the trigger task start running
         return self.scope
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> bool:
@@ -80,7 +94,14 @@ class _MoveOnWhen:
 
         if exc_type is asyncio.CancelledError and self.scope._should_cancel:
             self.scope.cancelled_caught = True
+            if self._trigger_error is not None:
+                # The body was cancelled because the trigger itself
+                # failed; surface that failure instead of swallowing it.
+                raise self._trigger_error
             return True  # Suppress the CancelledError
+
+        if exc_type is None and self._trigger_error is not None:
+            raise self._trigger_error
 
         return False
 
@@ -126,23 +147,35 @@ async def run_and_cancelling(
             await do_main_work()
         # background_worker is cancelled here
 
+    If the background task fails while the body is running, the body is
+    *not* interrupted; the background exception is re-raised when the
+    block exits, unless the body raised its own exception (which takes
+    precedence).
+
     Args:
         fn: Async callable to run in the background.
         *args: Positional arguments forwarded to *fn*.
         **kwargs: Keyword arguments forwarded to *fn*.
     """
     task = asyncio.create_task(fn(*args, **kwargs))
+    body_raised = False
     try:
         yield
+    except BaseException:
+        body_raised = True
+        raise
     finally:
         if task.done():
-            # Propagate non-cancellation exceptions from the background task
+            # Propagate non-cancellation exceptions from the background
+            # task — but never mask an exception already propagating
+            # from the body.
             try:
                 task.result()
             except asyncio.CancelledError:
                 pass
             except Exception:
-                raise
+                if not body_raised:
+                    raise
         else:
             task.cancel()
             try:
@@ -190,6 +223,7 @@ async def start_and_cancelling(
     # If the task fails before calling task_status.set(), unblock started.wait()
     task.add_done_callback(lambda _: started.set())
 
+    body_raised = False
     try:
         await started.wait()
 
@@ -197,6 +231,9 @@ async def start_and_cancelling(
             task.result()  # Propagate exception if task failed before started
 
         yield
+    except BaseException:
+        body_raised = True
+        raise
     finally:
         if task.done():
             try:
@@ -204,7 +241,8 @@ async def start_and_cancelling(
             except asyncio.CancelledError:
                 pass
             except Exception:
-                raise
+                if not body_raised:
+                    raise
         else:
             task.cancel()
             try:
